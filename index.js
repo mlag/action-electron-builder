@@ -132,7 +132,7 @@ const runAction = () => {
 	for (let i = 0; i < maxAttempts; i += 1) {
 		try {
 			run(
-				`npx electron-forge publish`,
+				`npm run publish`,
 				// `${useNpm ? "npx --no-install" : "yarn run"} ${cmd} --${platform} ${
 				// 	release ? "--publish always" : ""
 				// } ${args}`,
