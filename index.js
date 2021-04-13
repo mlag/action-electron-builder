@@ -1,6 +1,8 @@
+const { notDeepEqual } = require("assert");
 const { execSync } = require("child_process");
 const { existsSync, readFileSync } = require("fs");
 const { join } = require("path");
+const core = require('@actions/core');
 
 /**
  * Logs to the console
@@ -103,6 +105,7 @@ const runAction = () => {
 		setEnv("CSC_KEY_PASSWORD", getInput("windows_certs_password"));
 	}
 
+
 	// Disable console advertisements during install phase
 	setEnv("ADBLOCK", true);
 
@@ -127,12 +130,13 @@ const runAction = () => {
 		// }
 	}
 
+
 	log(`Building${release ? " and releasing" : ""} the Electron app…`);
 	// const cmd = useVueCli ? "vue-cli-service electron:build" : "electron-builder";
 	for (let i = 0; i < maxAttempts; i += 1) {
 		try {
 			run(
-				`npx electron-forge publish`,
+				`npm run publish`,
 				// `${useNpm ? "npx --no-install" : "yarn run"} ${cmd} --${platform} ${
 				// 	release ? "--publish always" : ""
 				// } ${args}`,
@@ -150,4 +154,9 @@ const runAction = () => {
 	}
 };
 
-runAction();
+try {
+	runAction();
+}
+catch(e) {
+	core.setFailed(JSON.stringify(e))
+}
