@@ -2,7 +2,7 @@ const { notDeepEqual } = require("assert");
 const { execSync } = require("child_process");
 const { existsSync, readFileSync } = require("fs");
 const { join } = require("path");
-const core = require('@actions/core');
+const core = require("@actions/core");
 
 /**
  * Logs to the console
@@ -98,13 +98,12 @@ const runAction = () => {
 	// Require code signing certificate and password if building for macOS. Export them to environment
 	// variables (required by `electron-builder`)
 	if (platform === "mac") {
-		setEnv("CSC_LINK", getInput("mac_certs"));
-		setEnv("CSC_KEY_PASSWORD", getInput("mac_certs_password"));
+		// setEnv("CSC_LINK", getInput("mac_certs"));
+		// setEnv("CSC_KEY_PASSWORD", getInput("mac_certs_password"));
 	} else if (platform === "windows") {
 		setEnv("CSC_LINK", getInput("windows_certs"));
 		setEnv("CSC_KEY_PASSWORD", getInput("windows_certs_password"));
 	}
-
 
 	// Disable console advertisements during install phase
 	setEnv("ADBLOCK", true);
@@ -129,7 +128,6 @@ const runAction = () => {
 		// 	}
 		// }
 	}
-
 
 	log(`Building${release ? " and releasing" : ""} the Electron app…`);
 	// const cmd = useVueCli ? "vue-cli-service electron:build" : "electron-builder";
@@ -156,7 +154,6 @@ const runAction = () => {
 
 try {
 	runAction();
-}
-catch(e) {
-	core.setFailed(JSON.stringify(e))
+} catch (e) {
+	core.setFailed(JSON.stringify(e));
 }
