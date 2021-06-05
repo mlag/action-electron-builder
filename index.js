@@ -115,18 +115,18 @@ const runAction = () => {
 	if (skipBuild) {
 		log("Skipping build script because `skip_build` option is set");
 	} else {
-		run(`npm run ${buildScriptName} --if-present`, pkgRoot);
+		// run(`npm run ${buildScriptName} --if-present`, pkgRoot);
 		// log("Running the build script…");
-		// if (useNpm) {
-		// 	run(`npm run ${buildScriptName} --if-present`, pkgRoot);
-		// } else {
-		// 	// TODO: Use `yarn run ${buildScriptName} --if-present` once supported
-		// 	// https://github.com/yarnpkg/yarn/issues/6894
-		// 	const pkgJson = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
-		// 	if (pkgJson.scripts && pkgJson.scripts[buildScriptName]) {
-		// 		run(`yarn run ${buildScriptName}`, pkgRoot);
-		// 	}
-		// }
+		if (useNpm) {
+			run(`npm run ${buildScriptName} --if-present`, pkgRoot);
+		} else {
+			// TODO: Use `yarn run ${buildScriptName} --if-present` once supported
+			// https://github.com/yarnpkg/yarn/issues/6894
+			const pkgJson = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
+			if (pkgJson.scripts && pkgJson.scripts[buildScriptName]) {
+				run(`yarn run ${buildScriptName}`, pkgRoot);
+			}
+		}
 	}
 
 	log(`Building${release ? " and releasing" : ""} the Electron app…`);
@@ -134,12 +134,16 @@ const runAction = () => {
 	for (let i = 0; i < maxAttempts; i += 1) {
 		try {
 			run(
-				`npm run publish`,
-				// `${useNpm ? "npx --no-install" : "yarn run"} ${cmd} --${platform} ${
-				// 	release ? "--publish always" : ""
-				// } ${args}`,
+				useNpm ? `npm run publish` : `yarn run publish`,
 				appRoot,
 			);
+			// run(
+			// 	`npm run publish`,
+			// 	// `${useNpm ? "npx --no-install" : "yarn run"} ${cmd} --${platform} ${
+			// 	// 	release ? "--publish always" : ""
+			// 	// } ${args}`,
+			// 	appRoot,
+			// );
 			break;
 		} catch (err) {
 			if (i < maxAttempts - 1) {
