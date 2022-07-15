@@ -1,7 +1,7 @@
-const { notDeepEqual } = require("assert");
 const { execSync } = require("child_process");
 const { existsSync, readFileSync } = require("fs");
 const { join } = require("path");
+
 const core = require("@actions/core");
 
 /**
@@ -70,7 +70,11 @@ const runAction = () => {
 	const release = getInput("release", true) === "true";
 	const pkgRoot = getInput("package_root", true);
 	const buildScriptName = getInput("build_script_name", true);
-	const skipBuild = getInput("skip_build") === "true";
+	// const skipBuild = getInput("skip_build") === "true";
+	const skipBuild = true;
+
+	const archsEnv = getInput("ELECTRON_ARCHS");
+
 	// const useVueCli = getInput("use_vue_cli") === "true";
 	const args = getInput("args") || "";
 	const maxAttempts = Number(getInput("max_attempts") || "1");
@@ -111,46 +115,50 @@ const runAction = () => {
 	log(`Installing dependencies using ${useNpm ? "NPM" : "Yarn"}…`);
 	run(useNpm ? "npm ci" : "yarn", pkgRoot);
 
-	// Run NPM build script if it exists
-	if (skipBuild) {
-		log("Skipping build script because `skip_build` option is set");
-	} else {
-		// run(`npm run ${buildScriptName} --if-present`, pkgRoot);
-		// log("Running the build script…");
-		if (useNpm) {
-			run(`npm run ${buildScriptName} --if-present`, pkgRoot);
-		} else {
-			// TODO: Use `yarn run ${buildScriptName} --if-present` once supported
-			// https://github.com/yarnpkg/yarn/issues/6894
-			const pkgJson = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
-			if (pkgJson.scripts && pkgJson.scripts[buildScriptName]) {
-				run(`yarn run ${buildScriptName}`, pkgRoot);
+	const archs = (archsEnv != null ? archsEnv.split(" ") : ["x64"]).map((arch) => `--arch=${arch}`);
+
+	for (const arch of archs) {
+		if (!skipBuild) {
+			// Run NPM build script if it exists
+			// if (skipBuild) {
+			// 	log("Skipping build script because `skip_build` option is set");
+			// } else {
+			// run(`npm run ${buildScriptName} --if-present`, pkgRoot);
+			// log("Running the build script…");
+			if (useNpm) {
+				// run(`npm run ${buildScriptName} ${arch} --if-present`, pkgRoot);
+				run(`npm run make -- ${arch}`, pkgRoot);
+			} else {
+				// TODO: Use `yarn run ${buildScriptName} --if-present` once supported
+				// https://github.com/yarnpkg/yarn/issues/6894
+				const pkgJson = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
+				if (pkgJson.scripts && pkgJson.scripts[buildScriptName]) {
+					run(`yarn run ${buildScriptName}`, pkgRoot);
+				}
 			}
 		}
-	}
 
-	log(`Building${release ? " and releasing" : ""} the Electron app…`);
-	// const cmd = useVueCli ? "vue-cli-service electron:build" : "electron-builder";
-	for (let i = 0; i < maxAttempts; i += 1) {
-		try {
-			run(
-				useNpm ? `npm run publish` : `yarn run publish`,
-				appRoot,
-			);
-			// run(
-			// 	`npm run publish`,
-			// 	// `${useNpm ? "npx --no-install" : "yarn run"} ${cmd} --${platform} ${
-			// 	// 	release ? "--publish always" : ""
-			// 	// } ${args}`,
-			// 	appRoot,
-			// );
-			break;
-		} catch (err) {
-			if (i < maxAttempts - 1) {
-				log(`Attempt ${i + 1} failed:`);
-				log(err);
-			} else {
-				throw err;
+		log(`Building${release ? " and releasing" : ""} the Electron app…`);
+		// const cmd = useVueCli ? "vue-cli-service electron:build" : "electron-builder";
+
+		for (let i = 0; i < maxAttempts; i += 1) {
+			try {
+				run(useNpm ? `npm run publish -- ${arch}` : `yarn run publish -- ${arch}`, appRoot);
+				// run(
+				// 	`npm run publish`,
+				// 	// `${useNpm ? "npx --no-install" : "yarn run"} ${cmd} --${platform} ${
+				// 	// 	release ? "--publish always" : ""
+				// 	// } ${args}`,
+				// 	appRoot,
+				// );
+				break;
+			} catch (err) {
+				if (i < maxAttempts - 1) {
+					log(`Attempt ${i + 1} failed:`);
+					log(err);
+				} else {
+					throw err;
+				}
 			}
 		}
 	}
